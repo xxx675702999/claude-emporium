@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pending_hooks.json",
+  "title": "PendingHooks",
+  "description": "Pending hooks truth file — unresolved cliffhangers, promises, and expected resolutions. Part of the 7 truth files per REQ-F-14. Mirrors HookRecordSchema.",
+  "type": "object",
+  "required": ["version", "hooks"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version for future migration support."
+    },
+    "lastUpdated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime when this file was last modified."
+    },
+    "hooks": {
+      "type": "array",
+      "description": "List of tracked hooks (cliffhangers, promises, mysteries, etc.).",
+      "items": {
+        "$ref": "#/definitions/HookRecord"
+      }
+    }
+  },
+  "definitions": {
+    "HookRecord": {
+      "type": "object",
+      "required": ["hookId", "startChapter", "type", "status", "lastAdvancedChapter"],
+      "additionalProperties": false,
+      "properties": {
+        "hookId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique hook identifier (e.g. 'hook-shadow-relic')."
+        },
+        "startChapter": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Chapter where this hook was first introduced."
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Hook category (e.g. 'mystery', 'promise', 'cliffhanger', 'threat', 'prophecy')."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["open", "progressing", "escalating", "critical", "resolved", "deferred"],
+          "description": "Hook status: open | progressing | escalating | critical | resolved | deferred. escalating/critical are high-priority variants of progressing."
+        },
+        "lastAdvancedChapter": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Most recent chapter where this hook was advanced or mentioned."
+        },
+        "expectedPayoff": {
+          "type": "string",
+          "description": "Planned payoff or resolution description (e.g. 'protagonist discovers the relic is a key to the ancient seal')."
+        },
+        "payoffTiming": {
+          "type": "string",
+          "enum": ["immediate", "near-term", "mid-arc", "slow-burn", "endgame"],
+          "description": "Expected timing: immediate | near-term | mid-arc | slow-burn | endgame."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional context or reminders about this hook."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,174 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ChapterMeta",
+  "description": "Per-chapter lifecycle tracking — replaces review-status.json. Stored at books/<id>/story/state/chapter-meta.json. Every pipeline mutation path (write, draft, review, rewrite, undo) must update this file.",
+  "type": "object",
+  "required": ["schemaVersion", "chapters"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version for future migration support."
+    },
+    "lastUpdated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of the most recent modification to this file."
+    },
+    "chapters": {
+      "type": "array",
+      "description": "Ordered list of chapter records. Sorted by chapter number ascending.",
+      "items": {
+        "$ref": "#/definitions/ChapterRecord"
+      }
+    }
+  },
+  "definitions": {
+    "ChapterRecord": {
+      "type": "object",
+      "required": ["number", "title", "status", "wordCount", "createdAt", "updatedAt"],
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Chapter number (1-based)."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Chapter title."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "incubating",
+            "drafted",
+            "auditing",
+            "audit-passed",
+            "audit-failed",
+            "state-degraded",
+            "ready-for-review",
+            "approved"
+          ],
+          "description": "Current lifecycle status. See Status Lifecycle section in novel-write.md for transition rules."
+        },
+        "wordCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Word count (en) or character count (zh) of the chapter content."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when the chapter record was first created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when the chapter record was last modified."
+        },
+        "auditIssues": {
+          "$ref": "#/definitions/AuditIssues",
+          "description": "Counts of audit issues from the most recent audit run."
+        },
+        "lengthWarnings": {
+          "type": "array",
+          "description": "Warnings from the inline length check (empty if within target band).",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lengthTelemetry": {
+          "$ref": "#/definitions/LengthTelemetry",
+          "description": "Length check telemetry from the most recent write or revision."
+        },
+        "tokenUsage": {
+          "$ref": "#/definitions/TokenUsage",
+          "description": "Cumulative token usage across all pipeline stages for this chapter."
+        },
+        "reviewerNotes": {
+          "type": "string",
+          "description": "Human-written notes from manual review (e.g. 'dialogue feels stilted in scene 2')."
+        },
+        "approvedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when the chapter was approved (set by --approve)."
+        },
+        "revisionCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of revision rounds applied to this chapter."
+        }
+      }
+    },
+    "AuditIssues": {
+      "type": "object",
+      "description": "Issue counts from the most recent audit run.",
+      "additionalProperties": false,
+      "properties": {
+        "critical": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "warning": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "info": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        }
+      }
+    },
+    "LengthTelemetry": {
+      "type": "object",
+      "description": "Length check telemetry from the inline length check.",
+      "additionalProperties": false,
+      "properties": {
+        "target": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Target word/character count from book.json chapterWordCount."
+        },
+        "actual": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Actual word/character count of the chapter."
+        },
+        "adjustment": {
+          "type": "string",
+          "enum": ["none", "expanded", "compressed", "failed"],
+          "description": "Result of the inline length check: none (within band), expanded (self-expanded), compressed (self-compressed), failed (beyond recovery band)."
+        }
+      }
+    },
+    "TokenUsage": {
+      "type": "object",
+      "description": "Cumulative token usage for this chapter across pipeline stages.",
+      "additionalProperties": false,
+      "properties": {
+        "prompt": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total prompt tokens."
+        },
+        "completion": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total completion tokens."
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total tokens (prompt + completion)."
+        }
+      }
+    }
+  }
+}

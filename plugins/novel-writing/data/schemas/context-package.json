@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "context-package.json",
+  "title": "ContextPackage",
+  "description": "Preparer output — compiled context package for the writer agent. Mirrors ContextPackageSchema in input-governance.ts.",
+  "type": "object",
+  "required": ["chapter", "selectedContext"],
+  "properties": {
+    "chapter": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Chapter number (1-based)."
+    },
+    "selectedContext": {
+      "type": "array",
+      "description": "Relevance-scored context entries selected from truth files and control documents.",
+      "items": {
+        "type": "object",
+        "required": ["source", "reason"],
+        "properties": {
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Origin file or artifact name (e.g. 'world_state.json:locations', 'pending_hooks.json:hook-shadow-relic')."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Why this context was selected (relevance scoring rationale)."
+          },
+          "excerpt": {
+            "type": "string",
+            "description": "Relevant excerpt or summary of the source content (optional)."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "fatigueAdvisories": {
+      "type": "array",
+      "description": "Advisory warnings from fatigue detector (optional, present only when warnings found).",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string" },
+          "severity": { "type": "string", "enum": ["advisory"] },
+          "chapters": { "type": "array", "items": { "type": "integer" } },
+          "detail": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

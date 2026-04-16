@@ -1,0 +1,117 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "character_matrix.json",
+  "title": "CharacterMatrix",
+  "description": "Character matrix truth file — all characters, their relationships, arcs, motivations, and abilities. Part of the 7 truth files per REQ-F-14.",
+  "type": "object",
+  "required": ["version", "characters"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version for future migration support."
+    },
+    "lastUpdated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime when this file was last modified."
+    },
+    "characters": {
+      "type": "array",
+      "description": "List of all tracked characters.",
+      "items": {
+        "$ref": "#/definitions/Character"
+      }
+    }
+  },
+  "definitions": {
+    "Character": {
+      "type": "object",
+      "required": ["id", "name", "status", "introducedInChapter", "lastAppearedInChapter"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique character identifier (e.g. 'protagonist', 'zhang-wei')."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Character's primary name."
+        },
+        "aliases": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Other names or titles this character is known by (e.g. ['Shadow Blade', 'The Wanderer'])."
+        },
+        "description": {
+          "type": "string",
+          "description": "Physical appearance and personality summary."
+        },
+        "motivation": {
+          "type": "string",
+          "description": "Character's core motivation or goal."
+        },
+        "arc": {
+          "type": "string",
+          "description": "Character arc type or current arc stage (e.g. 'redemption arc', 'fall from grace')."
+        },
+        "abilities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of known abilities, skills, or powers."
+        },
+        "relationships": {
+          "type": "array",
+          "description": "List of relationships this character has with other characters.",
+          "items": {
+            "$ref": "#/definitions/Relationship"
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "inactive", "deceased", "unknown"],
+          "description": "Character status: active | inactive | deceased | unknown."
+        },
+        "introducedInChapter": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Chapter where this character first appeared."
+        },
+        "lastAppearedInChapter": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Most recent chapter where this character appeared."
+        }
+      }
+    },
+    "Relationship": {
+      "type": "object",
+      "required": ["targetCharacterId", "relationship", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "targetCharacterId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "ID of the related character."
+        },
+        "relationship": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Nature of the relationship (e.g. 'mentor', 'rival', 'ally', 'enemy')."
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Current relationship status (e.g. 'active', 'estranged', 'deceased')."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional context about this relationship."
+        }
+      }
+    }
+  }
+}

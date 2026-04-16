@@ -1,0 +1,175 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "world_state.json",
+  "title": "WorldState",
+  "description": "World state truth file — locations, geography, technology/magic systems, and world rules. Part of the 7 truth files per REQ-F-14.",
+  "type": "object",
+  "required": ["version", "locations", "rules", "technology", "geography"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version for future migration support."
+    },
+    "lastUpdated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime when this file was last modified."
+    },
+    "locations": {
+      "type": "array",
+      "description": "List of world locations (sects, cities, dungeons, wilderness areas, etc.).",
+      "items": {
+        "$ref": "#/definitions/Location"
+      }
+    },
+    "rules": {
+      "type": "array",
+      "description": "List of world rules (magic system rules, physics, social laws, etc.).",
+      "items": {
+        "$ref": "#/definitions/Rule"
+      }
+    },
+    "technology": {
+      "type": "array",
+      "description": "List of technology or magic systems.",
+      "items": {
+        "$ref": "#/definitions/Technology"
+      }
+    },
+    "geography": {
+      "type": "array",
+      "description": "List of geographic regions.",
+      "items": {
+        "$ref": "#/definitions/Geography"
+      }
+    }
+  },
+  "definitions": {
+    "Location": {
+      "type": "object",
+      "required": ["id", "name", "type", "introducedInChapter"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique location identifier (e.g. 'frostpeak-sect')."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Location name (e.g. 'Frostpeak Sect')."
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Location type (e.g. 'sect', 'city', 'dungeon', 'wilderness')."
+        },
+        "description": {
+          "type": "string",
+          "description": "Physical description and notable features."
+        },
+        "parentLocation": {
+          "type": ["string", "null"],
+          "description": "Parent location ID if this is nested (e.g. 'inner-hall' parent is 'frostpeak-sect')."
+        },
+        "introducedInChapter": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Chapter where this location was first mentioned."
+        }
+      }
+    },
+    "Rule": {
+      "type": "object",
+      "required": ["id", "category", "statement", "introducedInChapter"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique rule identifier (e.g. 'cultivation-requires-spirit-stones')."
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Rule category (e.g. 'magic-system', 'physics', 'social-law')."
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The rule itself (e.g. 'Cultivation requires spirit stones as fuel')."
+        },
+        "exceptions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Known exceptions to this rule."
+        },
+        "introducedInChapter": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Chapter where this rule was established."
+        }
+      }
+    },
+    "Technology": {
+      "type": "object",
+      "required": ["id", "name", "introducedInChapter"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique technology/magic system identifier."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Technology or magic system name (e.g. 'Spirit Array Formation')."
+        },
+        "description": {
+          "type": "string",
+          "description": "How it works and what it does."
+        },
+        "limitations": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Known limitations or costs."
+        },
+        "introducedInChapter": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Chapter where this was first introduced."
+        }
+      }
+    },
+    "Geography": {
+      "type": "object",
+      "required": ["region", "introducedInChapter"],
+      "additionalProperties": false,
+      "properties": {
+        "region": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Geographic region name (e.g. 'Northern Wastes')."
+        },
+        "features": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Notable geographic features (mountains, rivers, climate)."
+        },
+        "politicalControl": {
+          "type": "string",
+          "description": "Which faction or power controls this region."
+        },
+        "introducedInChapter": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Chapter where this region was first mentioned."
+        }
+      }
+    }
+  }
+}

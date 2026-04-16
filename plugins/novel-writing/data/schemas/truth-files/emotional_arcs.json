@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "emotional_arcs.json",
+  "title": "EmotionalArcs",
+  "description": "Emotional arcs truth file — tracks character emotional progression with pressure shapes. Part of the 7 truth files per REQ-F-14.",
+  "type": "object",
+  "required": ["version", "arcs"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version for future migration support."
+    },
+    "lastUpdated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime when this file was last modified."
+    },
+    "arcs": {
+      "type": "array",
+      "description": "List of character emotional arcs.",
+      "items": {
+        "$ref": "#/definitions/EmotionalArc"
+      }
+    }
+  },
+  "definitions": {
+    "EmotionalArc": {
+      "type": "object",
+      "required": ["characterId", "characterName", "progression"],
+      "additionalProperties": false,
+      "properties": {
+        "characterId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Character ID this emotional arc belongs to."
+        },
+        "characterName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Character name for human readability."
+        },
+        "progression": {
+          "type": "array",
+          "description": "Ordered list of emotional states across chapters, forming the character's emotional arc.",
+          "items": {
+            "$ref": "#/definitions/EmotionalState"
+          }
+        }
+      }
+    },
+    "EmotionalState": {
+      "type": "object",
+      "required": ["chapter", "emotion", "intensity"],
+      "additionalProperties": false,
+      "properties": {
+        "chapter": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Chapter number where this emotional state was recorded."
+        },
+        "emotion": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Primary emotion at this point (e.g. 'hopeful', 'despairing', 'determined', 'conflicted')."
+        },
+        "intensity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Emotional intensity on a scale (0 is neutral, 10 is extreme)."
+        },
+        "pressureShape": {
+          "type": "string",
+          "enum": ["rising", "falling", "plateau", "spike"],
+          "description": "Emotional pressure trajectory (e.g. 'rising', 'falling', 'plateau', 'spike')."
+        },
+        "trigger": {
+          "type": "string",
+          "description": "Event or circumstance that triggered this emotional state."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional context about this emotional state."
+        }
+      }
+    }
+  }
+}

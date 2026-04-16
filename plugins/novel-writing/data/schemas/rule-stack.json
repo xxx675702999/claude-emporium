@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "rule-stack.json",
+  "title": "RuleStack",
+  "description": "Compiled rule stack — layered writing rules assembled by the preparer. Mirrors RuleStackSchema in input-governance.ts.",
+  "type": "object",
+  "required": ["layers", "sections", "overrideEdges", "activeOverrides"],
+  "properties": {
+    "layers": {
+      "type": "array",
+      "description": "Ordered list of rule layers from lowest to highest precedence.",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "precedence", "scope"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Layer identifier (e.g. 'L1_genre', 'L2_book', 'L3_authorIntent', 'L4_currentFocus')."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human-readable layer name (e.g. 'Genre Rules', 'Book Rules')."
+          },
+          "precedence": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Layer priority — higher numbers override lower. Genre is lowest, currentFocus is highest."
+          },
+          "scope": {
+            "type": "string",
+            "enum": ["global", "book", "arc", "local"],
+            "description": "Scope of this layer."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "sections": {
+      "type": "object",
+      "description": "Rules organized by enforcement strictness. Mirrors RuleStackSectionsSchema.",
+      "required": ["hard", "soft", "diagnostic"],
+      "properties": {
+        "hard": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Hard rules — must never be violated (e.g. 'no modern slang in xuanhuan setting')."
+        },
+        "soft": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Soft rules — preferred but may be overridden by higher layers."
+        },
+        "diagnostic": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Diagnostic rules — used for audit scoring but not enforced during writing."
+        }
+      },
+      "additionalProperties": false
+    },
+    "overrideEdges": {
+      "type": "array",
+      "description": "Declared override relationships between layers. Mirrors OverrideEdgeSchema.",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "allowed", "scope"],
+        "properties": {
+          "from": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Lower-precedence layer ID."
+          },
+          "to": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Higher-precedence layer ID that can override."
+          },
+          "allowed": {
+            "type": "boolean",
+            "description": "Whether this override is permitted."
+          },
+          "scope": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Scope of the override relationship."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "activeOverrides": {
+      "type": "array",
+      "description": "Currently active overrides applied for this chapter. Mirrors ActiveOverrideSchema.",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "target", "reason"],
+        "properties": {
+          "from": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Source layer being overridden."
+          },
+          "to": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Target layer providing the override."
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Specific rule being overridden."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Justification for the override."
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

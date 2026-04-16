@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "resource_ledger.json",
+  "title": "ResourceLedger",
+  "description": "Resource ledger truth file — tracks in-world resources (items, money, power levels) with opening/closing deltas per chapter. Part of the 7 truth files per REQ-F-14.",
+  "type": "object",
+  "required": ["version", "resources"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version for future migration support."
+    },
+    "lastUpdated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime when this file was last modified."
+    },
+    "resources": {
+      "type": "array",
+      "description": "List of resource ledger entries.",
+      "items": {
+        "$ref": "#/definitions/ResourceEntry"
+      }
+    }
+  },
+  "definitions": {
+    "ResourceEntry": {
+      "type": "object",
+      "required": ["id", "name", "type", "owner", "chapter", "openingState", "closingState"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique resource identifier (e.g. 'spirit-stones', 'protagonist-cultivation-level')."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Resource name (e.g. 'Spirit Stones', 'Cultivation Level')."
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Resource type (e.g. 'currency', 'power-level', 'item', 'reputation')."
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Character ID who owns or controls this resource."
+        },
+        "chapter": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Chapter number for this ledger entry."
+        },
+        "openingState": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Resource state at the start of the chapter (e.g. '1000 spirit stones', 'Golden Core Stage 3')."
+        },
+        "closingState": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Resource state at the end of the chapter (e.g. '750 spirit stones', 'Golden Core Stage 4')."
+        },
+        "delta": {
+          "type": "string",
+          "description": "Change description (e.g. '-250 spirit stones spent on formation materials', '+1 stage breakthrough')."
+        },
+        "source": {
+          "type": "string",
+          "description": "Source of the change (e.g. 'purchased from merchant', 'breakthrough after battle')."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional context about this resource change."
+        }
+      }
+    }
+  }
+}
