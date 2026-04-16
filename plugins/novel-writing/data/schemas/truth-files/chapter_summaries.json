@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "chapter_summaries.json",
+  "title": "ChapterSummaries",
+  "description": "Chapter summaries truth file — structured summaries of each chapter for quick reference. Part of the 7 truth files per REQ-F-14. Mirrors ChapterSummaryRowSchema.",
+  "type": "object",
+  "required": ["version", "chapters"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version for future migration support."
+    },
+    "lastUpdated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime when this file was last modified."
+    },
+    "chapters": {
+      "type": "array",
+      "description": "Ordered list of chapter summary records. Sorted by chapter number ascending.",
+      "items": {
+        "$ref": "#/definitions/ChapterSummary"
+      }
+    }
+  },
+  "definitions": {
+    "ChapterSummary": {
+      "type": "object",
+      "required": ["chapter", "title"],
+      "additionalProperties": false,
+      "properties": {
+        "chapter": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Chapter number (1-based)."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Chapter title."
+        },
+        "characters": {
+          "type": "string",
+          "description": "Characters appearing in this chapter (comma-separated or structured list)."
+        },
+        "events": {
+          "type": "string",
+          "description": "Summary of key events that occurred in this chapter."
+        },
+        "stateChanges": {
+          "type": "string",
+          "description": "Notable state changes (location shifts, power changes, relationship changes)."
+        },
+        "hookActivity": {
+          "type": "string",
+          "description": "Hook-related activity (new hooks introduced, hooks advanced, hooks resolved)."
+        },
+        "mood": {
+          "type": "string",
+          "description": "Dominant emotional tone of the chapter."
+        },
+        "chapterType": {
+          "type": "string",
+          "description": "Chapter type from genre profile (e.g. 'climax', 'setup', 'transition', 'training')."
+        }
+      }
+    }
+  }
+}

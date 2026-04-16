@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "hooks": [
+    {
+      "hookId": "H15",
+      "startChapter": 15,
+      "type": "信息/地图",
+      "status": "progressing",
+      "lastAdvancedChapter": 22,
+      "notes": "原始 H15"
+    },
+    {
+      "hookId": "H15 (新增)",
+      "startChapter": 10,
+      "type": "信息/地图",
+      "status": "progressing",
+      "lastAdvancedChapter": 24,
+      "notes": "重复的 H15，语义相近"
+    },
+    {
+      "hookId": "H16 (新增)",
+      "startChapter": 10,
+      "type": "实体/威胁",
+      "status": "open",
+      "lastAdvancedChapter": 0,
+      "notes": "与已有 H16 语义不同的孤儿 hook"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "my-plugins",
+  "owner": {
+    "name": "Ken Xu"
+  },
+  "plugins": [
+    {
+      "name": "novel-writing",
+      "source": "./plugins/novel-writing",
+      "description": "",
+      "author": {
+        "name": "Ken Xu"
+      }
+    }
+  ]
+}

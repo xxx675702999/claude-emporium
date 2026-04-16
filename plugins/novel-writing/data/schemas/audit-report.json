@@ -1,0 +1,187 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "audit-report.json",
+  "title": "AuditReport",
+  "description": "Merged audit report — combines LLM judgment (Track A), deterministic AI-tell checks (Track B), and sensitive-word detection into a single persisted report. Stored at books/<id>/story/runtime/chapter-XXXX.audit.json.",
+  "type": "object",
+  "required": ["chapter", "timestamp", "overallVerdict", "criticalIssues", "warningIssues", "infoIssues", "issues"],
+  "additionalProperties": false,
+  "properties": {
+    "chapter": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Chapter number (1-based)."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime when the audit was completed."
+    },
+    "overallVerdict": {
+      "type": "string",
+      "enum": ["pass", "fail"],
+      "description": "pass if 0 critical issues, fail otherwise."
+    },
+    "criticalIssues": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Count of critical-severity issues across all sources."
+    },
+    "warningIssues": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Count of warning-severity issues across all sources."
+    },
+    "infoIssues": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Count of info-severity issues across all sources."
+    },
+    "issues": {
+      "type": "array",
+      "description": "All issues from all three sources (LLM + deterministic + sensitive-words), merged into a flat list.",
+      "items": {
+        "$ref": "#/definitions/AuditIssue"
+      }
+    },
+    "summary": {
+      "type": "string",
+      "description": "Brief overall assessment from LLM auditor."
+    },
+    "literaryQualityCommentary": {
+      "type": "string",
+      "description": "Optional literary quality commentary from LLM auditor."
+    },
+    "deterministicResults": {
+      "$ref": "#/definitions/DeterministicResults",
+      "description": "Raw results from run-all-deterministic.py (dimensions 20-23 + heuristics)."
+    },
+    "sensitiveWordResults": {
+      "$ref": "#/definitions/SensitiveWordResults",
+      "description": "Raw results from sensitive-words.py."
+    },
+    "sources": {
+      "type": "object",
+      "description": "Metadata about which sources contributed to this report.",
+      "properties": {
+        "llmAudit": { "type": "boolean", "description": "Whether LLM audit was run." },
+        "deterministic": { "type": "boolean", "description": "Whether deterministic checks were run." },
+        "sensitiveWords": { "type": "boolean", "description": "Whether sensitive-word check was run." }
+      },
+      "additionalProperties": false
+    },
+    "restoredIssues": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of issues restored from a previous audit via incremental-audit.py forgetting protection. 0 on first audit."
+    },
+    "tokenUsage": {
+      "$ref": "#/definitions/TokenUsage"
+    }
+  },
+  "definitions": {
+    "AuditIssue": {
+      "type": "object",
+      "required": ["severity", "category", "description", "suggestion"],
+      "additionalProperties": false,
+      "properties": {
+        "severity": {
+          "type": "string",
+          "enum": ["critical", "warning", "info"],
+          "description": "Issue severity: critical blocks approval, warning should fix, info is informational."
+        },
+        "category": {
+          "type": "string",
+          "description": "Dimension name or detection area (e.g., 'OOC', 'Timeline', 'Hedge Density', 'Sensitive Content')."
+        },
+        "description": {
+          "type": "string",
+          "description": "What went wrong."
+        },
+        "suggestion": {
+          "type": "string",
+          "description": "How to fix it."
+        },
+        "source": {
+          "type": "string",
+          "enum": ["llm", "deterministic", "sensitive-words"],
+          "description": "Which audit source produced this issue."
+        },
+        "dimensionId": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 37,
+          "description": "Dimension ID (1-37) if applicable."
+        },
+        "_restored": {
+          "type": "boolean",
+          "description": "True if this issue was restored from a previous audit by incremental-audit.py."
+        },
+        "_restoreReason": {
+          "type": "string",
+          "description": "Reason for restoration (only present when _restored is true)."
+        }
+      }
+    },
+    "DeterministicResults": {
+      "type": "object",
+      "description": "Raw output from run-all-deterministic.py.",
+      "properties": {
+        "dimensions": {
+          "type": "object",
+          "description": "Per-dimension results keyed by dim20, dim21, dim22, dim23.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "passed": { "type": "boolean" },
+              "dimension": { "type": "string" }
+            }
+          }
+        },
+        "overall": {
+          "type": "object",
+          "properties": {
+            "passed": { "type": "boolean" },
+            "totalChecked": { "type": "integer" },
+            "failed": { "type": "integer" }
+          },
+          "additionalProperties": false
+        },
+        "heuristics": {
+          "type": "object",
+          "description": "Heuristic AI-tell results from aigc-heuristics.py."
+        }
+      },
+      "additionalProperties": true
+    },
+    "SensitiveWordResults": {
+      "type": "object",
+      "description": "Raw output from sensitive-words.py.",
+      "properties": {
+        "sensitiveWordErrors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "word": { "type": "string" },
+              "severity": { "type": "string", "enum": ["block", "warn"] },
+              "line": { "type": "integer" },
+              "excerpt": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "TokenUsage": {
+      "type": "object",
+      "properties": {
+        "promptTokens": { "type": "integer", "minimum": 0 },
+        "completionTokens": { "type": "integer", "minimum": 0 },
+        "totalTokens": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

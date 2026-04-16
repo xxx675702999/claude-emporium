@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "revision-log.json",
+  "title": "RevisionLog",
+  "description": "Revision tracking log — records all revision rounds for a chapter. Supports the 5 revision modes.",
+  "type": "object",
+  "required": ["chapterNumber", "revisions"],
+  "properties": {
+    "chapterNumber": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Chapter number (1-based)."
+    },
+    "revisions": {
+      "type": "array",
+      "description": "Ordered list of revision rounds. Appended on each revision, never mutated (immutable log).",
+      "items": {
+        "type": "object",
+        "required": ["round", "mode", "beforeWordCount", "afterWordCount", "issuesAddressed", "remainingIssues", "timestamp"],
+        "properties": {
+          "round": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Revision round number (1-based, max 3)."
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["polish", "spot-fix", "rewrite", "rework", "anti-detect"],
+            "description": "Revision mode: polish (minor style fixes) | spot-fix (targeted issue resolution) | rewrite (major rework) | rework (structural change) | anti-detect (reduce AI traces)."
+          },
+          "beforeWordCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Word count before this revision round."
+          },
+          "afterWordCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Word count after this revision round."
+          },
+          "issuesAddressed": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "List of audit issue descriptions that this revision targeted."
+          },
+          "remainingIssues": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "List of audit issues that remain after this revision round."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 datetime when this revision was completed."
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

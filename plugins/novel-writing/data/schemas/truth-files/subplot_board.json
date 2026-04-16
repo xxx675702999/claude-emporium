@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "subplot_board.json",
+  "title": "SubplotBoard",
+  "description": "Subplot board truth file — tracks active and dormant subplots. Part of the 7 truth files per REQ-F-14.",
+  "type": "object",
+  "required": ["version", "subplots"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version for future migration support."
+    },
+    "lastUpdated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime when this file was last modified."
+    },
+    "subplots": {
+      "type": "array",
+      "description": "List of subplot records.",
+      "items": {
+        "$ref": "#/definitions/Subplot"
+      }
+    }
+  },
+  "definitions": {
+    "Subplot": {
+      "type": "object",
+      "required": ["id", "name", "status", "introducedInChapter", "lastUpdatedChapter"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique subplot identifier (e.g. 'subplot-shadow-pavilion-conspiracy')."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Subplot name (e.g. 'Shadow Pavilion Conspiracy')."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "dormant", "resolved"],
+          "description": "Subplot status: active | dormant | resolved."
+        },
+        "description": {
+          "type": "string",
+          "description": "Summary of what this subplot is about."
+        },
+        "involvedCharacters": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of character IDs involved in this subplot."
+        },
+        "introducedInChapter": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Chapter where this subplot was first introduced."
+        },
+        "lastUpdatedChapter": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Most recent chapter where this subplot was advanced."
+        },
+        "expectedResolution": {
+          "type": "string",
+          "description": "Planned resolution or payoff for this subplot (optional)."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional context or reminders about this subplot."
+        }
+      }
+    }
+  }
+}

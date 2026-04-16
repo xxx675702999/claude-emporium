@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "book.json",
+  "title": "BookConfig",
+  "description": "Top-level book metadata. Mirrors packages/core/src/models/book.ts BookConfigSchema.",
+  "type": "object",
+  "required": ["id", "title", "platform", "genre", "status", "targetChapters", "chapterWordCount", "language", "createdAt", "updatedAt"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique book identifier (UUID or slug). Used as directory name under books/."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable book title."
+    },
+    "platform": {
+      "type": "string",
+      "enum": ["tomato", "feilu", "qidian", "other"],
+      "description": "Publishing platform. Determines default genre and pacing conventions."
+    },
+    "genre": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Genre identifier matching a built-in or custom genre profile (e.g. xuanhuan, litrpg, cultivation)."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["incubating", "outlining", "active", "paused", "completed", "dropped"],
+      "description": "Book lifecycle status."
+    },
+    "targetChapters": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Planned total number of chapters."
+    },
+    "chapterWordCount": {
+      "type": "integer",
+      "minimum": 100,
+      "description": "Target word count per chapter. Normalization band is +/-10% of this value."
+    },
+    "language": {
+      "type": "string",
+      "enum": ["zh", "en"],
+      "description": "Primary language: zh (Chinese) | en (English). Affects word counting, punctuation rules, and genre defaults."
+    },
+    "fanficMode": {
+      "type": ["string", "null"],
+      "enum": ["canon", "au", "ooc", "cp", null],
+      "description": "Fan fiction mode, null for original fiction. Activates conditional audit dimensions 34-37."
+    },
+    "parentBookId": {
+      "type": ["string", "null"],
+      "description": "For spinoff books, the ID of the parent book whose truth files are shared for canon consistency."
+    },
+    "consolidationThreshold": {
+      "type": ["integer", "null"],
+      "minimum": 1,
+      "description": "Number of chapter summaries per volume before consolidation triggers. Default: 50. Null to disable."
+    },
+    "qualityGates": {
+      "type": "object",
+      "properties": {
+        "maxAuditRetries": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum number of revision rounds in the audit-revise loop. Default: 2."
+        },
+        "pauseAfterConsecutiveFailures": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "If consecutive chapters fail audit after max retries, pause and prompt user. Default: 3."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Quality gate configuration for the audit-revise loop. If omitted, defaults are used."
+    },
+    "chapterCount": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Current chapter count. Updated by pipeline after write/rewrite/undo."
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime when the book was created."
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 datetime when the book was last modified."
+    }
+  },
+  "additionalProperties": false
+}

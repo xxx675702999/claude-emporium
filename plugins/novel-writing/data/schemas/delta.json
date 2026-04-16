@@ -1,0 +1,421 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "delta.json",
+  "title": "RuntimeStateDelta",
+  "description": "Structured state changes produced after observing a chapter. Mirrors RuntimeStateDeltaSchema in runtime-state.ts.",
+  "type": "object",
+  "required": ["chapter", "hookOps", "notes"],
+  "properties": {
+    "chapter": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Chapter number this delta applies to (1-based). Must be strictly greater than the manifest's lastAppliedChapter."
+    },
+    "currentStatePatch": {
+      "type": "object",
+      "description": "Patch applied to the current-state facts. Each field replaces the matching predicate in the current_state facts array.",
+      "properties": {
+        "currentLocation": {
+          "type": "string",
+          "description": "Updated protagonist location (e.g. 'Frostpeak Sect, inner hall')."
+        },
+        "protagonistState": {
+          "type": "string",
+          "description": "Updated protagonist physical/mental state (e.g. 'injured, recovering')."
+        },
+        "currentGoal": {
+          "type": "string",
+          "description": "Updated protagonist's immediate goal (e.g. 'break through to Golden Core')."
+        },
+        "currentConstraint": {
+          "type": "string",
+          "description": "Updated constraint or limitation on the protagonist (e.g. 'sealed meridian, cannot use fire arts')."
+        },
+        "currentAlliances": {
+          "type": "string",
+          "description": "Updated relationship map (e.g. 'allied with Zhang Wei, hostile to Shadow Pavilion')."
+        },
+        "currentConflict": {
+          "type": "string",
+          "description": "Updated primary conflict (e.g. 'racing against rival sect for the relic')."
+        }
+      },
+      "additionalProperties": false
+    },
+    "hookOps": {
+      "type": "object",
+      "description": "Operations on pending hooks. Uses upsert/mention/resolve/defer semantics.",
+      "required": ["upsert", "mention", "resolve", "defer"],
+      "properties": {
+        "upsert": {
+          "type": "array",
+          "description": "Create or update hooks with full HookRecord data.",
+          "items": {
+            "$ref": "#/definitions/hookRecord"
+          }
+        },
+        "mention": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "List of hook IDs that were referenced/advanced but not resolved."
+        },
+        "resolve": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "List of hook IDs to mark as resolved."
+        },
+        "defer": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "List of hook IDs to postpone (status set to deferred)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "newHookCandidates": {
+      "type": "array",
+      "description": "New hooks discovered in this chapter that are not yet tracked.",
+      "items": {
+        "$ref": "#/definitions/newHookCandidate"
+      }
+    },
+    "chapterSummary": {
+      "$ref": "#/definitions/chapterSummary",
+      "description": "Structured summary of the chapter."
+    },
+    "subplotOps": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/subplotOp" },
+      "description": "Operations on subplot board entries (add/update/resolve subplots)."
+    },
+    "emotionalArcOps": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/emotionalArcOp" },
+      "description": "Operations on emotional arc entries (character emotional progression updates)."
+    },
+    "characterMatrixOps": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/characterMatrixOp" },
+      "description": "Operations on character matrix entries (new characters, relationship changes, ability unlocks)."
+    },
+    "resourceLedgerOps": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/resourceLedgerOp" },
+      "description": "Operations on resource ledger entries (chapter-by-chapter resource snapshots). Only used for genres with numericalSystem."
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Freeform notes from the reflector about this chapter."
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "hookRecord": {
+      "type": "object",
+      "required": ["hookId", "startChapter", "type", "status", "lastAdvancedChapter", "notes"],
+      "properties": {
+        "hookId": {
+          "type": "string",
+          "pattern": "^H\\d+(_\\d+)?$",
+          "description": "Format: H<startChapter> or H<startChapter>_<seq>. Examples: H15, H15_1. Suffixes like '(new)' or '(新增)' are rejected. For new hooks use newHookCandidates (apply-delta assigns IDs)."
+        },
+        "startChapter": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Chapter where this hook was first introduced."
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Hook category (e.g. 'mystery', 'promise', 'cliffhanger')."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["open", "progressing", "escalating", "critical", "deferred", "resolved"],
+          "description": "Hook status. escalating/critical are high-priority variants of progressing."
+        },
+        "lastAdvancedChapter": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Most recent chapter where this hook was advanced."
+        },
+        "expectedPayoff": {
+          "type": "string",
+          "description": "Expected resolution description."
+        },
+        "payoffTiming": {
+          "type": "string",
+          "enum": ["immediate", "near-term", "mid-arc", "slow-burn", "endgame"],
+          "description": "Expected timing."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional context or reminders about this hook."
+        }
+      },
+      "additionalProperties": false
+    },
+    "newHookCandidate": {
+      "type": "object",
+      "required": ["type", "notes"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Category of the new hook discovered in this chapter."
+        },
+        "expectedPayoff": {
+          "type": "string",
+          "description": "Expected payoff description."
+        },
+        "payoffTiming": {
+          "type": "string",
+          "enum": ["immediate", "near-term", "mid-arc", "slow-burn", "endgame"],
+          "description": "Expected timing."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Context about the new hook."
+        }
+      },
+      "additionalProperties": false
+    },
+    "chapterSummary": {
+      "type": "object",
+      "required": ["chapter", "title"],
+      "properties": {
+        "chapter": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Chapter number (must match delta.chapter)."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Chapter title."
+        },
+        "characters": {
+          "type": "string",
+          "description": "Characters appearing in this chapter."
+        },
+        "events": {
+          "type": "string",
+          "description": "Key events that occurred."
+        },
+        "stateChanges": {
+          "type": "string",
+          "description": "Notable state changes (location shifts, power changes, relationship changes)."
+        },
+        "hookActivity": {
+          "type": "string",
+          "description": "Hook-related activity (new hooks introduced, hooks advanced, hooks resolved)."
+        },
+        "mood": {
+          "type": "string",
+          "description": "Dominant emotional tone of the chapter."
+        },
+        "chapterType": {
+          "type": "string",
+          "description": "Chapter type from genre profile (e.g. 'climax', 'setup', 'transition', 'training')."
+        }
+      },
+      "additionalProperties": false
+    },
+    "subplotOp": {
+      "type": "object",
+      "required": ["op", "id"],
+      "properties": {
+        "op": {
+          "type": "string",
+          "enum": ["add", "update", "resolve"],
+          "description": "Operation type."
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Subplot identifier."
+        },
+        "name": {
+          "type": "string",
+          "description": "Subplot name."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "dormant", "resolved"],
+          "description": "Subplot status."
+        },
+        "description": {
+          "type": "string",
+          "description": "Subplot description or update details."
+        },
+        "involvedCharacters": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Characters involved in this subplot."
+        }
+      },
+      "additionalProperties": false
+    },
+    "emotionalArcOp": {
+      "type": "object",
+      "required": ["op", "characterId"],
+      "properties": {
+        "op": {
+          "type": "string",
+          "enum": ["add", "update"],
+          "description": "Operation type."
+        },
+        "characterId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Character identifier."
+        },
+        "characterName": {
+          "type": "string",
+          "description": "Character display name."
+        },
+        "chapter": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Chapter number for this emotional arc entry."
+        },
+        "emotion": {
+          "type": "string",
+          "description": "Emotion label (e.g. 'fear', 'joy', 'anger')."
+        },
+        "intensity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Emotion intensity on a 0-10 scale."
+        },
+        "pressureShape": {
+          "type": "string",
+          "enum": ["rising", "falling", "plateau", "spike"],
+          "description": "Shape of the emotional pressure curve."
+        },
+        "cause": {
+          "type": "string",
+          "description": "What triggered or caused this emotional state."
+        }
+      },
+      "additionalProperties": false
+    },
+    "characterMatrixOp": {
+      "type": "object",
+      "required": ["op", "id"],
+      "properties": {
+        "op": {
+          "type": "string",
+          "enum": ["add", "update"],
+          "description": "Operation type."
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Character identifier."
+        },
+        "name": {
+          "type": "string",
+          "description": "Character display name."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "inactive", "deceased", "unknown"],
+          "description": "Character status."
+        },
+        "lastAppearedInChapter": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Last chapter where this character appeared."
+        },
+        "newAbilities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "New abilities unlocked or demonstrated."
+        },
+        "relationshipChanges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["targetId", "type"],
+            "properties": {
+              "targetId": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Target character identifier."
+              },
+              "type": {
+                "type": "string",
+                "description": "Relationship type (e.g. 'ally', 'enemy', 'mentor', 'rival')."
+              },
+              "description": {
+                "type": "string",
+                "description": "Details about the relationship change."
+              }
+            },
+            "additionalProperties": false
+          },
+          "description": "Relationship changes with other characters."
+        }
+      },
+      "additionalProperties": false
+    },
+    "resourceLedgerOp": {
+      "type": "object",
+      "required": ["op", "id", "name", "type", "owner", "openingState", "closingState", "delta"],
+      "properties": {
+        "op": {
+          "type": "string",
+          "enum": ["snapshot"],
+          "description": "Operation type. snapshot: append a chapter resource state row."
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique resource identifier (e.g. 'spirit-stones', 'cultivation-level')."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Resource display name."
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Resource type (e.g. 'currency', 'power-level', 'item', 'reputation')."
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Character ID who owns or controls this resource."
+        },
+        "openingState": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Resource state at start of chapter (e.g. '1000 spirit stones')."
+        },
+        "closingState": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Resource state at end of chapter (e.g. '750 spirit stones')."
+        },
+        "delta": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Required change description. Format: '<sign><magnitude> <reason>'. Examples: '-250 spent on materials', '+50 looted', '0 no change this chapter', 'initial' for first appearance."
+        },
+        "source": {
+          "type": "string",
+          "description": "Source of the change (e.g. 'purchased from merchant')."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional context."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
