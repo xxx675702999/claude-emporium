@@ -29,6 +29,7 @@ Exit codes:
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -39,6 +40,13 @@ PLUGIN_DIR = SCRIPT_DIR.parent.parent
 sys.path.insert(0, str(SCRIPT_DIR.parent))
 from lib.json_utils import read_json, write_json
 from lib.chapter_utils import find_chapter_file
+from lib.pipeline_errors import (
+    HookIdFormatError,
+    HookStatusEnumError,
+    ResourceLedgerFieldError,
+    PredicateAliasError,
+    DeltaValidationError,
+)
 
 # ---------------------------------------------------------------------------
 # Valid enums (must match schemas)
@@ -46,6 +54,7 @@ from lib.chapter_utils import find_chapter_file
 
 VALID_HOOK_STATUSES = {"open", "progressing", "escalating", "critical", "deferred", "resolved"}
 VALID_PAYOFF_TIMINGS = {"immediate", "near-term", "mid-arc", "slow-burn", "endgame"}
+HOOK_ID_RE = re.compile(r"^H\d+(_\d+)?$")
 
 
 # ---------------------------------------------------------------------------
@@ -67,6 +76,12 @@ def apply_hook_ops(hooks_list: list, delta: dict, chapter: int) -> list:
         hid = record.get("hookId")
         if not hid:
             continue
+        if not HOOK_ID_RE.match(hid):
+            raise HookIdFormatError(
+                f"Illegal hookId {hid!r} in hookOps.upsert. "
+                f"Expected format ^H\\d+(_\\d+)?$. "
+                f"To introduce a new hook, use delta.newHookCandidates, not upsert."
+            )
         # Normalize status
         status = record.get("status", "open")
         if status not in VALID_HOOK_STATUSES:
@@ -80,7 +95,13 @@ def apply_hook_ops(hooks_list: list, delta: dict, chapter: int) -> list:
 
     # 2. Mention: update lastAdvancedChapter only
     for hid in hook_ops.get("mention") or []:
-        if isinstance(hid, str) and hid in hooks_map:
+        if not isinstance(hid, str):
+            continue
+        if not HOOK_ID_RE.match(hid):
+            raise HookIdFormatError(
+                f"Illegal hookId {hid!r} in hookOps.mention."
+            )
+        if hid in hooks_map:
             hooks_map[hid]["lastAdvancedChapter"] = max(
                 hooks_map[hid].get("lastAdvancedChapter", 0), chapter
             )
@@ -88,7 +109,13 @@ def apply_hook_ops(hooks_list: list, delta: dict, chapter: int) -> list:
     # 3. Resolve: mark as resolved (handle both string and object formats)
     for item in hook_ops.get("resolve") or []:
         hid = item if isinstance(item, str) else item.get("hookId", "") if isinstance(item, dict) else ""
-        if hid and hid in hooks_map:
+        if not hid:
+            continue
+        if not HOOK_ID_RE.match(hid):
+            raise HookIdFormatError(
+                f"Illegal hookId {hid!r} in hookOps.resolve."
+            )
+        if hid in hooks_map:
             hooks_map[hid]["status"] = "resolved"
             hooks_map[hid]["lastAdvancedChapter"] = max(
                 hooks_map[hid].get("lastAdvancedChapter", 0), chapter
@@ -96,7 +123,13 @@ def apply_hook_ops(hooks_list: list, delta: dict, chapter: int) -> list:
 
     # 4. Defer: mark as deferred
     for hid in hook_ops.get("defer") or []:
-        if isinstance(hid, str) and hid in hooks_map:
+        if not isinstance(hid, str):
+            continue
+        if not HOOK_ID_RE.match(hid):
+            raise HookIdFormatError(
+                f"Illegal hookId {hid!r} in hookOps.defer."
+            )
+        if hid in hooks_map:
             hooks_map[hid]["status"] = "deferred"
             hooks_map[hid]["lastAdvancedChapter"] = max(
                 hooks_map[hid].get("lastAdvancedChapter", 0), chapter
