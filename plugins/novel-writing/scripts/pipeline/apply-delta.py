@@ -82,10 +82,18 @@ def apply_hook_ops(hooks_list: list, delta: dict, chapter: int) -> list:
                 f"Expected format ^H\\d+(_\\d+)?$. "
                 f"To introduce a new hook, use delta.newHookCandidates, not upsert."
             )
-        # Normalize status
-        status = record.get("status", "open")
+        # Enforce status enum (fail-fast)
+        status = record.get("status")
+        if status is None or status == "":
+            raise HookStatusEnumError(
+                f"hookId={hid} has no status. "
+                f"Expected one of {sorted(VALID_HOOK_STATUSES)}."
+            )
         if status not in VALID_HOOK_STATUSES:
-            status = "progressing"
+            raise HookStatusEnumError(
+                f"hookId={hid} has invalid status={status!r}. "
+                f"Expected one of {sorted(VALID_HOOK_STATUSES)}."
+            )
         record["status"] = status
         # Ensure lastAdvancedChapter is current
         record["lastAdvancedChapter"] = max(
