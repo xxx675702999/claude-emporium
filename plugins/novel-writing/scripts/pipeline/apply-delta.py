@@ -484,8 +484,18 @@ def apply_character_matrix_ops(data: dict, delta: dict, chapter: int) -> dict:
 # Resource ledger operations
 # ---------------------------------------------------------------------------
 
+REQUIRED_LEDGER_FIELDS = (
+    "op", "id", "name", "type", "owner",
+    "openingState", "closingState", "delta",
+)
+
+
 def apply_resource_ledger_ops(data: dict, delta: dict, chapter: int) -> dict:
-    """Apply resourceLedgerOps to resource ledger. Returns updated data."""
+    """Apply resourceLedgerOps to resource ledger. Returns updated data.
+
+    Raises ResourceLedgerFieldError on any missing/empty required field or
+    invalid `op` value. See pipeline_errors.py.
+    """
     ops = delta.get("resourceLedgerOps")
     if not ops or not isinstance(ops, list):
         return data
@@ -494,26 +504,34 @@ def apply_resource_ledger_ops(data: dict, delta: dict, chapter: int) -> dict:
 
     for op_entry in ops:
         if not isinstance(op_entry, dict):
-            continue
-        op = op_entry.get("op")
-        rid = op_entry.get("id")
-        if not op or not rid:
-            print(f"  [WARN] Skipping malformed resourceLedgerOp (missing required fields): {op_entry}", file=sys.stderr)
-            continue
+            raise ResourceLedgerFieldError(
+                f"resourceLedgerOp must be dict, got {type(op_entry).__name__}"
+            )
 
-        if op == "snapshot":
-            resources.append({
-                "id": rid,
-                "name": op_entry.get("name", ""),
-                "type": op_entry.get("type", ""),
-                "owner": op_entry.get("owner", ""),
-                "chapter": chapter,
-                "openingState": op_entry.get("openingState", ""),
-                "closingState": op_entry.get("closingState", ""),
-                "delta": op_entry.get("delta", ""),
-                "source": op_entry.get("source", ""),
-                "notes": op_entry.get("notes", ""),
-            })
+        missing = [k for k in REQUIRED_LEDGER_FIELDS if not op_entry.get(k)]
+        if missing:
+            raise ResourceLedgerFieldError(
+                f"resourceLedgerOp missing required fields {missing}: "
+                f"id={op_entry.get('id')!r}"
+            )
+
+        if op_entry["op"] != "snapshot":
+            raise ResourceLedgerFieldError(
+                f"resourceLedgerOp.op must be 'snapshot', got {op_entry['op']!r}"
+            )
+
+        resources.append({
+            "id": op_entry["id"],
+            "name": op_entry["name"],
+            "type": op_entry["type"],
+            "owner": op_entry["owner"],
+            "chapter": chapter,
+            "openingState": op_entry["openingState"],
+            "closingState": op_entry["closingState"],
+            "delta": op_entry["delta"],
+            "source": op_entry.get("source", ""),
+            "notes": op_entry.get("notes", ""),
+        })
 
     data["resources"] = resources
     return data
