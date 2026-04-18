@@ -172,7 +172,7 @@ If the audit finds critical issues:
    POST_FAILED=$( python3 -c "import json; d=json.load(open('$POST_DET')); print(d['deterministic']['overall']['failed'])" )
    ```
    If `POST_FAILED > PRE_FAILED` → **discard revision**, keep pre-revision content, skip re-audit
-4. **Re-persist truth files**: Apply reviser's updated state/ledger/hooks via apply-delta.py (revised content may have changed events, character behavior, hook status)
+4. **Re-persist truth files**: Apply reviser's revisionDelta via apply-delta.py on `story/runtime/chapter-XXXX.revision-delta.json` (same invocation writer Phase 2 uses; any `DeltaValidationError` exits 1 and triggers state-manager.py recovery)
 5. **Incremental re-audit** at temperature 0 (deterministic):
    a. Extract failed dimension IDs:
       ```bash
