@@ -117,8 +117,8 @@
       "properties": {
         "hookId": {
           "type": "string",
-          "minLength": 1,
-          "description": "Unique hook identifier (e.g. 'hook-shadow-relic')."
+          "pattern": "^H\\d+(_\\d+)?$",
+          "description": "Format: H<startChapter> or H<startChapter>_<seq>. Examples: H15, H15_1. Suffixes like '(new)' or '(新增)' are rejected. For new hooks use newHookCandidates (apply-delta assigns IDs)."
         },
         "startChapter": {
           "type": "integer",
