@@ -131,11 +131,16 @@ Run audit on chapter N, then auto-revise if critical issues are found (self-corr
 3. If `criticalIssues == 0`: report PASS, set ChapterMeta status to `audit-passed` then `ready-for-review`, done
 4. If `criticalIssues > 0`: set ChapterMeta status to `audit-failed`, enter self-correction loop
    - Select revision mode: `spot-fix` (≤3 critical) or `rewrite` (>3 critical)
-   - Spawn reviser agent → revisedContent + updatedState/Ledger/Hooks
+   - Spawn reviser agent → revisedContent + revisionDelta (written to story/runtime/chapter-<NNNN>.revision-delta.json)
    - Word count check: verify delta within mode limit (spot-fix ±10%, rewrite ±20%)
    - AI-tell regression guard: compare pre/post `run-all-deterministic.py` failed count
      If post > pre → discard revision, keep original, skip re-persist/re-audit
-   - Re-persist truth files via apply-delta.py (revised content may change events/hooks/state)
+   - **Re-persist via apply-delta.py** (same invocation writer Phase 2 uses):
+     ```bash
+     python3 $.plugin.directory/scripts/pipeline/apply-delta.py \
+       "$BOOK_DIR" "$BOOK_DIR/story/runtime/chapter-$CHAPTER_PAD.revision-delta.json"
+     ```
+     Any `DeltaValidationError` exits 1 with a structured stderr message. `state-manager.py recovery` will pick it up and retry settlement.
    - Incremental re-audit:
      a. Extract failed dims (`incremental-audit.py --mode dimensions`)
      b. Spawn auditor with `--dimensions <failed-ids>` (temp 0)
@@ -484,11 +489,16 @@ if --rewrite <N>         → run rewrite handler
    ```
    (Override with `--mode` if specified)
 5. Enter self-correction loop (max rounds from `book.json` `qualityGates.maxAuditRetries`, default 2):
-   - Spawn reviser agent → revisedContent + updatedState/Ledger/Hooks
+   - Spawn reviser agent → revisedContent + revisionDelta (written to story/runtime/chapter-<NNNN>.revision-delta.json)
    - Word count check: verify delta within mode limit
    - AI-tell regression guard: compare pre/post `run-all-deterministic.py` failed count
      If post > pre → discard revision, keep original, skip re-persist/re-audit
-   - Re-persist truth files via apply-delta.py (revised content may change events/hooks/state)
+   - **Re-persist via apply-delta.py** (same invocation writer Phase 2 uses):
+     ```bash
+     python3 $.plugin.directory/scripts/pipeline/apply-delta.py \
+       "$BOOK_DIR" "$BOOK_DIR/story/runtime/chapter-$CHAPTER_PAD.revision-delta.json"
+     ```
+     Any `DeltaValidationError` exits 1 with a structured stderr message. `state-manager.py recovery` will pick it up and retry settlement.
    - Incremental re-audit:
      a. Extract failed dims (`incremental-audit.py --mode dimensions`)
      b. Spawn auditor with `--dimensions <failed-ids>` (temp 0)

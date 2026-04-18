@@ -344,14 +344,19 @@ For each chapter (1 to --count):
      - If interactive + criticalCount <= 2: Auto-revise without pause
      - If batch: Auto-revise without pause
      - If --pause-on revise: Wait for user confirmation
-     - 7a. Spawn reviser agent (single spot-fix pass) → revisedContent + updatedState/Ledger/Hooks
+     - 7a. Spawn reviser agent (single spot-fix pass) → revisedContent + revisionDelta (written to story/runtime/chapter-<NNNN>.revision-delta.json)
      - 7b. Word count check: `python3 $.plugin.directory/scripts/pipeline/word-count.py "$REVISED_CHAPTER"`
        Record lengthWarning in ChapterMeta if delta exceeds mode limit
      - 7c. AI-tell regression guard:
        Compare pre-revision deterministic.overall.failed (from step 6 Track B)
        vs post-revision `python3 $.plugin.directory/scripts/detect/run-all-deterministic.py "$REVISED_CHAPTER"`
        If post > pre → discard revision, keep original, skip steps 7d-7g
-     - 7d. Re-persist truth files: apply reviser's updatedState/Ledger/Hooks via apply-delta.py
+     - 7d. **Re-persist via apply-delta.py** (same invocation writer Phase 2 uses):
+       ```bash
+       python3 $.plugin.directory/scripts/pipeline/apply-delta.py \
+         "$BOOK_DIR" "$BOOK_DIR/story/runtime/chapter-$CHAPTER_PAD.revision-delta.json"
+       ```
+       Any `DeltaValidationError` exits 1 with a structured stderr message. `state-manager.py recovery` will pick it up and retry settlement.
      - 7e. Incremental re-audit (temperature 0):
        1. Extract failed dims: `incremental-audit.py --mode dimensions --audit-report <original>`
        2. Spawn auditor with `--dimensions <failed-ids>`
@@ -595,7 +600,7 @@ Persist complete (truth files updated)
   ├─ Audit passed? → Done
   │
   └─ Critical issues? → Revision round:
-      1. Reviser → single spot-fix pass → revisedContent + updatedState/Ledger/Hooks
+      1. Reviser → single spot-fix pass → revisedContent + revisionDelta (chapter-<NNNN>.revision-delta.json)
       2. Word count check (word-count.py)
       3. AI-tell regression guard:
          Compare pre/post run-all-deterministic.py failed count
