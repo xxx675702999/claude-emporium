@@ -747,168 +747,178 @@ def main() -> int:
     if chapter <= last_applied:
         print(f"  [WARN] Delta chapter {chapter} <= manifest.lastAppliedChapter {last_applied}. Reapplying.")
 
-    # Apply operations
-    changes = []
+    try:
+        # Apply operations
+        changes = []
 
-    # 1. Hook operations
-    old_hook_count = len(hooks_data.get("hooks", []))
-    hooks_data["hooks"] = apply_hook_ops(hooks_data.get("hooks", []), delta, chapter)
-    new_hook_count = len(hooks_data["hooks"])
-    resolved = [item if isinstance(item, str) else item.get("hookId", "") for item in (delta.get("hookOps", {}).get("resolve") or [])]
-    upserted = [h.get("hookId", "") for h in (delta.get("hookOps", {}).get("upsert") or [])]
-    new_candidates = len(delta.get("newHookCandidates") or [])
-    changes.append(f"hooks: {old_hook_count}→{new_hook_count} (upsert:{len(upserted)}, resolve:{len(resolved)}, new:{new_candidates})")
+        # 1. Hook operations
+        old_hook_count = len(hooks_data.get("hooks", []))
+        hooks_data["hooks"] = apply_hook_ops(hooks_data.get("hooks", []), delta, chapter)
+        new_hook_count = len(hooks_data["hooks"])
+        resolved = [item if isinstance(item, str) else item.get("hookId", "") for item in (delta.get("hookOps", {}).get("resolve") or [])]
+        upserted = [h.get("hookId", "") for h in (delta.get("hookOps", {}).get("upsert") or [])]
+        new_candidates = len(delta.get("newHookCandidates") or [])
+        changes.append(f"hooks: {old_hook_count}→{new_hook_count} (upsert:{len(upserted)}, resolve:{len(resolved)}, new:{new_candidates})")
 
-    # 2. Current state patch
-    old_chapter = current_state.get("chapter", 0)
-    current_state = apply_current_state_patch(current_state, delta, chapter)
-    patch_fields = list((delta.get("currentStatePatch") or {}).keys())
-    if patch_fields:
-        changes.append(f"state: ch{old_chapter}→ch{chapter} ({len(patch_fields)} fields)")
+        # 2. Current state patch
+        old_chapter = current_state.get("chapter", 0)
+        current_state = apply_current_state_patch(current_state, delta, chapter)
+        patch_fields = list((delta.get("currentStatePatch") or {}).keys())
+        if patch_fields:
+            changes.append(f"state: ch{old_chapter}→ch{chapter} ({len(patch_fields)} fields)")
 
-    # 3. Chapter summary
-    old_summary_count = len(summaries.get("chapters", []))
-    summaries = apply_chapter_summary(summaries, delta)
-    new_summary_count = len(summaries.get("chapters", []))
-    if new_summary_count > old_summary_count:
-        changes.append(f"summaries: {old_summary_count}→{new_summary_count}")
-    elif new_summary_count == old_summary_count:
-        changes.append(f"summaries: updated ch{chapter}")
+        # 3. Chapter summary
+        old_summary_count = len(summaries.get("chapters", []))
+        summaries = apply_chapter_summary(summaries, delta)
+        new_summary_count = len(summaries.get("chapters", []))
+        if new_summary_count > old_summary_count:
+            changes.append(f"summaries: {old_summary_count}→{new_summary_count}")
+        elif new_summary_count == old_summary_count:
+            changes.append(f"summaries: updated ch{chapter}")
 
-    # 4. Subplot operations
-    old_subplot_count = len(subplot_board.get("subplots", []))
-    subplot_board = apply_subplot_ops(subplot_board, delta, chapter)
-    new_subplot_count = len(subplot_board.get("subplots", []))
-    subplot_ops = delta.get("subplotOps") or []
-    if subplot_ops:
-        changes.append(f"subplots: {old_subplot_count}→{new_subplot_count} ({len(subplot_ops)} ops)")
+        # 4. Subplot operations
+        old_subplot_count = len(subplot_board.get("subplots", []))
+        subplot_board = apply_subplot_ops(subplot_board, delta, chapter)
+        new_subplot_count = len(subplot_board.get("subplots", []))
+        subplot_ops = delta.get("subplotOps") or []
+        if subplot_ops:
+            changes.append(f"subplots: {old_subplot_count}→{new_subplot_count} ({len(subplot_ops)} ops)")
 
-    # 5. Emotional arc operations
-    old_arc_count = len(emotional_arcs.get("arcs", []))
-    emotional_arcs = apply_emotional_arc_ops(emotional_arcs, delta, chapter)
-    new_arc_count = len(emotional_arcs.get("arcs", []))
-    arc_ops = delta.get("emotionalArcOps") or []
-    if arc_ops:
-        changes.append(f"arcs: {old_arc_count}→{new_arc_count} ({len(arc_ops)} ops)")
+        # 5. Emotional arc operations
+        old_arc_count = len(emotional_arcs.get("arcs", []))
+        emotional_arcs = apply_emotional_arc_ops(emotional_arcs, delta, chapter)
+        new_arc_count = len(emotional_arcs.get("arcs", []))
+        arc_ops = delta.get("emotionalArcOps") or []
+        if arc_ops:
+            changes.append(f"arcs: {old_arc_count}→{new_arc_count} ({len(arc_ops)} ops)")
 
-    # 6. Character matrix operations
-    old_char_count = len(character_matrix.get("characters", []))
-    character_matrix = apply_character_matrix_ops(character_matrix, delta, chapter)
-    new_char_count = len(character_matrix.get("characters", []))
-    char_ops = delta.get("characterMatrixOps") or []
-    if char_ops:
-        changes.append(f"characters: {old_char_count}→{new_char_count} ({len(char_ops)} ops)")
+        # 6. Character matrix operations
+        old_char_count = len(character_matrix.get("characters", []))
+        character_matrix = apply_character_matrix_ops(character_matrix, delta, chapter)
+        new_char_count = len(character_matrix.get("characters", []))
+        char_ops = delta.get("characterMatrixOps") or []
+        if char_ops:
+            changes.append(f"characters: {old_char_count}→{new_char_count} ({len(char_ops)} ops)")
 
-    # 7. Resource ledger operations
-    old_res_count = len(resource_ledger.get("resources", []))
-    resource_ledger = apply_resource_ledger_ops(resource_ledger, delta, chapter)
-    new_res_count = len(resource_ledger.get("resources", []))
-    res_ops = delta.get("resourceLedgerOps") or []
-    if res_ops:
-        changes.append(f"resources: {old_res_count}→{new_res_count} ({len(res_ops)} ops)")
+        # 7. Resource ledger operations
+        old_res_count = len(resource_ledger.get("resources", []))
+        resource_ledger = apply_resource_ledger_ops(resource_ledger, delta, chapter)
+        new_res_count = len(resource_ledger.get("resources", []))
+        res_ops = delta.get("resourceLedgerOps") or []
+        if res_ops:
+            changes.append(f"resources: {old_res_count}→{new_res_count} ({len(res_ops)} ops)")
 
-    # 8. Update manifest
-    manifest["lastAppliedChapter"] = max(manifest.get("lastAppliedChapter", 0), chapter)
-    changes.append(f"manifest: lastAppliedChapter={manifest['lastAppliedChapter']}")
+        # 8. Update manifest
+        manifest["lastAppliedChapter"] = max(manifest.get("lastAppliedChapter", 0), chapter)
+        changes.append(f"manifest: lastAppliedChapter={manifest['lastAppliedChapter']}")
 
-    # Ensure version fields
-    summaries.setdefault("version", 1)
-    current_state.setdefault("version", 1)
-    hooks_data.setdefault("version", 1)
-    subplot_board.setdefault("version", 1)
-    emotional_arcs.setdefault("version", 1)
-    character_matrix.setdefault("version", 1)
-    resource_ledger.setdefault("version", 1)
+        # Ensure version fields
+        summaries.setdefault("version", 1)
+        current_state.setdefault("version", 1)
+        hooks_data.setdefault("version", 1)
+        subplot_board.setdefault("version", 1)
+        emotional_arcs.setdefault("version", 1)
+        character_matrix.setdefault("version", 1)
+        resource_ledger.setdefault("version", 1)
 
-    # Report changes
-    for change in changes:
-        print(f"  {change}")
+        # Report changes
+        for change in changes:
+            print(f"  {change}")
 
-    if args.dry_run:
-        print("\n[DRY RUN] No files written.")
-        return 0
+        if args.dry_run:
+            print("\n[DRY RUN] No files written.")
+            return 0
 
-    # Write JSON files
-    write_json(str(state_dir / "chapter_summaries.json"), summaries)
-    write_json(str(state_dir / "current_state.json"), current_state)
-    write_json(str(state_dir / "pending_hooks.json"), hooks_data)
-    write_json(str(state_dir / "manifest.json"), manifest)
-    write_json(str(state_dir / "subplot_board.json"), subplot_board)
-    write_json(str(state_dir / "emotional_arcs.json"), emotional_arcs)
-    write_json(str(state_dir / "character_matrix.json"), character_matrix)
-    # Only write resource_ledger if it has data (TD-4)
-    if resource_ledger.get("resources"):
-        write_json(str(state_dir / "resource_ledger.json"), resource_ledger)
+        # Write JSON files
+        write_json(str(state_dir / "chapter_summaries.json"), summaries)
+        write_json(str(state_dir / "current_state.json"), current_state)
+        write_json(str(state_dir / "pending_hooks.json"), hooks_data)
+        write_json(str(state_dir / "manifest.json"), manifest)
+        write_json(str(state_dir / "subplot_board.json"), subplot_board)
+        write_json(str(state_dir / "emotional_arcs.json"), emotional_arcs)
+        write_json(str(state_dir / "character_matrix.json"), character_matrix)
+        # Only write resource_ledger if it has data (TD-4)
+        if resource_ledger.get("resources"):
+            write_json(str(state_dir / "resource_ledger.json"), resource_ledger)
 
-    # Validate
-    if not args.skip_validation:
-        errors = validate_truth_files(state_dir)
-        if errors:
-            print(f"\n  [VALIDATION] {len(errors)} issues:")
-            for err in errors[:10]:
-                print(f"    {err}")
-            # Don't fail — validation issues may be pre-existing
+        # Validate
+        if not args.skip_validation:
+            errors = validate_truth_files(state_dir)
+            if errors:
+                print(f"\n  [VALIDATION] {len(errors)} issues:")
+                for err in errors[:10]:
+                    print(f"    {err}")
+                # Don't fail — validation issues may be pre-existing
+            else:
+                print("  [VALIDATION] All truth files valid")
+
+        # Regenerate markdown projections
+        rendered = regenerate_projections(book_dir, state_dir, story_dir)
+        if rendered:
+            print(f"  [RENDER] Regenerated: {', '.join(rendered)}")
+
+        # Update chapter-meta.json (auto-create if missing)
+        update_chapter_meta(book_dir, delta, chapter)
+
+        # Snapshot truth files for rollback capability
+        snapshot_result = subprocess.run(
+            [sys.executable, str(PLUGIN_DIR / "scripts" / "pipeline" / "state-manager.py"),
+             "snapshot", str(book_dir), str(chapter)],
+            capture_output=True, text=True, timeout=30,
+        )
+        if snapshot_result.returncode == 0:
+            print(f"  [SNAPSHOT] Created for chapter {chapter}")
         else:
-            print("  [VALIDATION] All truth files valid")
+            print(f"  [SNAPSHOT] Warning: {snapshot_result.stderr.strip()}", file=sys.stderr)
 
-    # Regenerate markdown projections
-    rendered = regenerate_projections(book_dir, state_dir, story_dir)
-    if rendered:
-        print(f"  [RENDER] Regenerated: {', '.join(rendered)}")
+        # Cleanup old snapshots (keep last 10 + one per 10-chapter interval)
+        subprocess.run(
+            [sys.executable, str(PLUGIN_DIR / "scripts" / "pipeline" / "state-manager.py"),
+             "snapshot-cleanup", str(book_dir), str(chapter)],
+            capture_output=True, text=True, timeout=30,
+        )
 
-    # Update chapter-meta.json (auto-create if missing)
-    update_chapter_meta(book_dir, delta, chapter)
+        # Prune old runtime files (keep current + 2 previous, delta never deleted)
+        subprocess.run(
+            [sys.executable, str(PLUGIN_DIR / "scripts" / "pipeline" / "runtime-prune.py"),
+             str(book_dir), str(chapter)],
+            capture_output=True, text=True, timeout=30,
+        )
 
-    # Snapshot truth files for rollback capability
-    snapshot_result = subprocess.run(
-        [sys.executable, str(PLUGIN_DIR / "scripts" / "pipeline" / "state-manager.py"),
-         "snapshot", str(book_dir), str(chapter)],
-        capture_output=True, text=True, timeout=30,
-    )
-    if snapshot_result.returncode == 0:
-        print(f"  [SNAPSHOT] Created for chapter {chapter}")
-    else:
-        print(f"  [SNAPSHOT] Warning: {snapshot_result.stderr.strip()}", file=sys.stderr)
+        # Sync MemoryDB so preparer can query fresh data next chapter
+        sync_result = subprocess.run(
+            [sys.executable, str(PLUGIN_DIR / "scripts" / "pipeline" / "memory-db.py"),
+             "sync", str(book_dir)],
+            capture_output=True, text=True, timeout=30,
+        )
+        if sync_result.returncode == 0:
+            print(f"  [MEMORYDB] Synced")
+        else:
+            # Non-fatal — preparer falls back to file reads
+            print(f"  [MEMORYDB] Sync skipped: {sync_result.stderr.strip()[:80]}", file=sys.stderr)
 
-    # Cleanup old snapshots (keep last 10 + one per 10-chapter interval)
-    subprocess.run(
-        [sys.executable, str(PLUGIN_DIR / "scripts" / "pipeline" / "state-manager.py"),
-         "snapshot-cleanup", str(book_dir), str(chapter)],
-        capture_output=True, text=True, timeout=30,
-    )
+        # Auto-generate current_focus.md for next chapter
+        focus_result = subprocess.run(
+            [sys.executable, str(PLUGIN_DIR / "scripts" / "pipeline" / "generate-focus.py"),
+             str(book_dir)],
+            capture_output=True, text=True, timeout=30,
+        )
+        if focus_result.returncode == 0:
+            print(f"  [FOCUS] Generated current_focus.md for ch{chapter + 1}")
+        else:
+            print(f"  [FOCUS] Skipped: {focus_result.stderr.strip()[:80]}", file=sys.stderr)
 
-    # Prune old runtime files (keep current + 2 previous, delta never deleted)
-    subprocess.run(
-        [sys.executable, str(PLUGIN_DIR / "scripts" / "pipeline" / "runtime-prune.py"),
-         str(book_dir), str(chapter)],
-        capture_output=True, text=True, timeout=30,
-    )
-
-    # Sync MemoryDB so preparer can query fresh data next chapter
-    sync_result = subprocess.run(
-        [sys.executable, str(PLUGIN_DIR / "scripts" / "pipeline" / "memory-db.py"),
-         "sync", str(book_dir)],
-        capture_output=True, text=True, timeout=30,
-    )
-    if sync_result.returncode == 0:
-        print(f"  [MEMORYDB] Synced")
-    else:
-        # Non-fatal — preparer falls back to file reads
-        print(f"  [MEMORYDB] Sync skipped: {sync_result.stderr.strip()[:80]}", file=sys.stderr)
-
-    # Auto-generate current_focus.md for next chapter
-    focus_result = subprocess.run(
-        [sys.executable, str(PLUGIN_DIR / "scripts" / "pipeline" / "generate-focus.py"),
-         str(book_dir)],
-        capture_output=True, text=True, timeout=30,
-    )
-    if focus_result.returncode == 0:
-        print(f"  [FOCUS] Generated current_focus.md for ch{chapter + 1}")
-    else:
-        print(f"  [FOCUS] Skipped: {focus_result.stderr.strip()[:80]}", file=sys.stderr)
-
-    print(f"\nDelta for chapter {chapter} applied successfully.")
-    return 0
+        print(f"\nDelta for chapter {chapter} applied successfully.")
+        return 0
+    except DeltaValidationError as e:
+        print(f"\n[{type(e).__name__}] {e}", file=sys.stderr)
+        print(
+            "  Hint: delta.json breached a hardened contract. "
+            "See docs/specs/2026-04-18-subsystem-1-persist-contracts-design.md. "
+            "If running in the pipeline, state-manager.py recovery should trigger.",
+            file=sys.stderr,
+        )
+        return 1
 
 
 if __name__ == "__main__":
