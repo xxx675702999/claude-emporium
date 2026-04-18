@@ -182,8 +182,9 @@ def apply_hook_ops(hooks_list: list, delta: dict, chapter: int) -> list:
 # Current state patch — port of InkOS state-reducer.ts applyCurrentStatePatch()
 # ---------------------------------------------------------------------------
 
-# Predicate alias map (zh → canonical field name)
-PREDICATE_ALIASES = {
+# Predicate alias pairs (zh ↔ en). Used by apply_current_state_patch to
+# normalize patch keys to the book's canonical language (book.json.language).
+_ZH_TO_EN = {
     "当前位置": "currentLocation",
     "主角状态": "protagonistState",
     "当前目标": "currentGoal",
@@ -191,34 +192,74 @@ PREDICATE_ALIASES = {
     "当前敌我": "currentAlliances",
     "当前冲突": "currentConflict",
 }
+_EN_TO_ZH = {en: zh for zh, en in _ZH_TO_EN.items()}
+
+# Legacy name for backward compat with anywhere that might still import it.
+PREDICATE_ALIASES = _ZH_TO_EN
 
 
-def apply_current_state_patch(state_data: dict, delta: dict, chapter: int) -> dict:
-    """Apply currentStatePatch to current_state facts."""
+def _canonicalize_predicate(pred: str, book_language: str) -> str:
+    """Return the canonical form of a predicate for the book language."""
+    if book_language == "zh":
+        # Normalize en → zh when we know the pair, otherwise pass through.
+        return _EN_TO_ZH.get(pred, pred)
+    # Default / "en": normalize zh → en.
+    return _ZH_TO_EN.get(pred, pred)
+
+
+def apply_current_state_patch(
+    state_data: dict,
+    delta: dict,
+    chapter: int,
+    book_language: str = "zh",
+) -> dict:
+    """Apply currentStatePatch to current_state facts with language normalization.
+
+    Keys in the patch are mapped to the book's canonical language side. Any
+    pre-existing duplicate (both sides of an alias pair present as live facts)
+    raises PredicateAliasError so a migration can be run.
+    """
+    # Pre-apply duplicate detection on existing live facts.
+    facts = state_data.get("facts", [])
+    live_preds = {
+        f.get("predicate", "") for f in facts
+        if f.get("validUntilChapter") is None
+    }
+    for zh, en in _ZH_TO_EN.items():
+        if zh in live_preds and en in live_preds:
+            raise PredicateAliasError(
+                f"current_state has both {zh!r} and {en!r} live. "
+                "Run predicate migration to collapse duplicates."
+            )
+
     patch = delta.get("currentStatePatch")
     if not patch or not isinstance(patch, dict):
         return state_data
 
     state_data["chapter"] = chapter
-    facts = state_data.get("facts", [])
 
+    # Bucket by canonical predicate so two patch keys pointing at the same
+    # semantic slot collapse to one fact.
+    canonical_values: dict[str, str] = {}
     for field, value in patch.items():
         if not value:
             continue
-        canonical = PREDICATE_ALIASES.get(field, field)
+        canonical = _canonicalize_predicate(field, book_language)
+        canonical_values[canonical] = str(value)
 
-        # Invalidate old fact with same predicate
+    for canonical, value in canonical_values.items():
+        # Invalidate any live fact matching this canonical predicate
+        # (including its alias counterpart).
+        alias_side = _ZH_TO_EN.get(canonical) or _EN_TO_ZH.get(canonical)
         for fact in facts:
             pred = fact.get("predicate", "")
-            canonical_pred = PREDICATE_ALIASES.get(pred, pred)
-            if canonical_pred == canonical and fact.get("validUntilChapter") is None:
+            if fact.get("validUntilChapter") is None and pred in (canonical, alias_side):
                 fact["validUntilChapter"] = chapter
 
-        # Add new fact
         facts.append({
             "subject": "Protagonist",
             "predicate": canonical,
-            "object": str(value),
+            "object": value,
             "validFromChapter": chapter,
             "validUntilChapter": None,
             "sourceChapter": chapter,
@@ -762,7 +803,11 @@ def main() -> int:
 
         # 2. Current state patch
         old_chapter = current_state.get("chapter", 0)
-        current_state = apply_current_state_patch(current_state, delta, chapter)
+        book_cfg = read_json(str(book_dir / "book.json")) or {}
+        book_language = book_cfg.get("language", "zh")
+        current_state = apply_current_state_patch(
+            current_state, delta, chapter, book_language=book_language
+        )
         patch_fields = list((delta.get("currentStatePatch") or {}).keys())
         if patch_fields:
             changes.append(f"state: ch{old_chapter}→ch{chapter} ({len(patch_fields)} fields)")
