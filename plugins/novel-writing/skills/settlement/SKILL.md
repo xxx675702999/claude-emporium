@@ -164,7 +164,7 @@ Each operation is a `snapshot` that records the opening and closing state of a t
 | `owner` | Yes | Character ID who owns/controls this resource |
 | `openingState` | Yes | State at chapter start (e.g. `"1000 spirit stones"`) |
 | `closingState` | Yes | State at chapter end (e.g. `"750 spirit stones"`) |
-| `delta` | No | Change description (e.g. `"-250 spent on formation materials"`) |
+| `delta` | Yes | Change description (e.g. `"-250 spent on formation materials"`) — see required-field rules below |
 | `source` | No | Source of the change (e.g. `"purchased from merchant"`) |
 | `notes` | No | Additional context |
 
@@ -194,6 +194,16 @@ Example:
   }
 ]
 ```
+
+### ResourceLedgerOp.delta (REQUIRED as of subsystem 1)
+
+Every resourceLedgerOp MUST include a non-empty `delta` string describing the change. Format: `<sign><magnitude> <reason>`. Examples:
+- `"-250 spent on formation materials"`
+- `"+50 looted from beast"`
+- `"0 no change this chapter"` — when opening equals closing
+- `"initial"` — when this is the resource's first appearance
+
+Writer and reviser both must populate this field. `apply-delta.py` raises `ResourceLedgerFieldError` on any missing or empty delta and exits 1, which triggers settlement recovery.
 
 ### Delta JSON Structure
 

@@ -364,7 +364,7 @@
     },
     "resourceLedgerOp": {
       "type": "object",
-      "required": ["op", "id", "name", "type", "owner", "openingState", "closingState"],
+      "required": ["op", "id", "name", "type", "owner", "openingState", "closingState", "delta"],
       "properties": {
         "op": {
           "type": "string",
@@ -403,7 +403,8 @@
         },
         "delta": {
           "type": "string",
-          "description": "Change description (e.g. '-250 spent on formation materials')."
+          "minLength": 1,
+          "description": "Required change description. Format: '<sign><magnitude> <reason>'. Examples: '-250 spent on materials', '+50 looted', '0 no change this chapter', 'initial' for first appearance."
         },
         "source": {
           "type": "string",
