@@ -11,6 +11,8 @@ FIXTURES_DIR = PLUGIN_ROOT / "tests" / "fixtures" / "subsystem-1"
 
 # Make scripts/lib importable
 sys.path.insert(0, str(SCRIPTS_DIR))
+# Allow `from conftest import ...` in sibling test files
+sys.path.insert(0, str(Path(__file__).parent))
 
 
 @pytest.fixture

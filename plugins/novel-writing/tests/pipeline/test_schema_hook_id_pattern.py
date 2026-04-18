@@ -1,11 +1,11 @@
 """Validate HookRecord.hookId pattern in delta.json schema."""
 import json
-from pathlib import Path
 
 import jsonschema
 import pytest
 
-PLUGIN_ROOT = Path(__file__).resolve().parents[2]
+from conftest import PLUGIN_ROOT
+
 SCHEMA_PATH = PLUGIN_ROOT / "data" / "schemas" / "delta.json"
 
 
